@@ -3,16 +3,29 @@ import numpy as np
 import gym
 
 
+# BASE SETTING
+# GRID_SIZE = 5
+# MAX_STEPS = 20
+
+GRID_SIZE = 5
+MAX_STEPS = (GRID_SIZE // 2) * 2 + 2 * GRID_SIZE + 6
+# print(MAX_STEPS)
+
+
 class GridWorldEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, n_goals=2):
         super(GridWorldEnv, self).__init__()
-        self.grid_size = 5
-        self.max_steps = 20
+        self.grid_size = GRID_SIZE
+        self.max_steps = MAX_STEPS
+        self.deterministic_start = False
         self.letter_goals = {
             5: (self.grid_size, self.grid_size),  # 'A'
-            6: (1, 1),  # 'B'
+            # 5: (1, 1)
+            # 6: (1, 1),  # 'B'
             # 7: (5, 3),  # 'C'
         }
+        if n_goals > 1:
+            self.letter_goals[6] = (1, 1)
         self.letters = list(self.letter_goals.keys())
         self.action_meanings = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B", "C"]
         self.action_space = gym.spaces.Discrete(len(self.action_meanings))
@@ -26,9 +39,12 @@ class GridWorldEnv(gym.Env):
         )
 
     def reset(self):
-        self.agent_pos = np.array(
-            [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
-        )
+        if self.deterministic_start:
+            self.agent_pos = [self.grid_size // 2 + 1, self.grid_size // 2 + 1]
+        else:
+            self.agent_pos = np.array(
+                [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
+            )
         # self.agent_pos = random.choice([np.array([4, 3]), np.array([1,2])])
         # self.agent_pos = np.array([1, 2])
         self.letter = random.choice(self.letters)
@@ -76,7 +92,9 @@ class GridWorldEnv(gym.Env):
 class TwoStageGridWorldEnv(GridWorldEnv):
     def __init__(self):
         super(TwoStageGridWorldEnv, self).__init__()
-        self.max_steps = 20
+        self.grid_size = GRID_SIZE
+        self.max_steps = MAX_STEPS
+        self.deterministic_start = True
         self.letter_goals = {
             5: [(self.grid_size, self.grid_size)],  # 'A'
             6: [(1, 1)],  # 'B'
@@ -96,9 +114,12 @@ class TwoStageGridWorldEnv(GridWorldEnv):
         )
 
     def reset(self):
-        self.agent_pos = np.array(
-            [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
-        )
+        if self.deterministic_start:
+            self.agent_pos = np.array([self.grid_size // 2 + 1, self.grid_size // 2 + 1])
+        else:
+            self.agent_pos = np.array(
+                [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
+            )
         # self.agent_pos = random.choice([np.array([4, 3]), np.array([1,2])])
         # self.agent_pos = np.array([1, 2])
         self.letter = 7
@@ -112,7 +133,7 @@ class TwoStageGridWorldEnv(GridWorldEnv):
 
     def step(self, action):
         self.steps += 1
-        if action < 5:  # Directional action
+        if action < 5 and action > 0:  # Directional action, action 0 is pad value
             delta = [(-1, 0), (1, 0), (0, -1), (0, 1)][action - 1]
             new_pos = self.agent_pos + np.array(delta)
             if np.all((1 <= new_pos) & (new_pos <= self.grid_size)):
@@ -144,4 +165,102 @@ class TwoStageGridWorldEnv(GridWorldEnv):
             act = 3
         elif direction[1] > 0:
             act = 4
+        return act
+
+
+class DebugEnv(GridWorldEnv):
+
+    def __init__(self):
+        self.letter = 5
+        self.agent_pos = [1, 1]
+        # self.grid_size = 2
+
+    def reset(self):
+        return self._get_obs()
+
+    def step(self, action):
+        if action == 5:
+            reward = 1
+        else:
+            reward = 0
+
+        return self._get_obs(), reward, True, {}
+
+
+class PlayGridWorldEnv(gym.Env):
+    def __init__(self):
+        super(PlayGridWorldEnv, self).__init__()
+        self.grid_size = GRID_SIZE  # 3
+        self.max_steps = MAX_STEPS  # 10
+        self.deterministic_start = False
+        self.letter_goals = {
+            5: (self.grid_size, self.grid_size),  # 'A'
+            # 5: (1, 1)
+            6: (1, 1),  # 'B'
+            # 7: (5, 3),  # 'C'
+        }
+        self.letters = list(self.letter_goals.keys())
+        self.action_meanings = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B", "C"]
+        self.action_space = gym.spaces.Discrete(len(self.action_meanings))
+        self.observation_space = gym.spaces.Dict(
+            {
+                "letter": gym.spaces.Discrete(len(self.letters)),  # 0 = A, 1 = B, 2 = C
+                "position": gym.spaces.Box(
+                    low=1, high=self.grid_size, shape=(2,), dtype=np.int32
+                ),
+            }
+        )
+
+    def reset(self):
+        if self.deterministic_start:
+            self.agent_pos = [self.grid_size // 2 + 1, self.grid_size // 2 + 1]
+        else:
+            self.agent_pos = np.array(
+                [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
+            )
+        self.letter = random.choice(self.letters)
+        self.goal = self.letter_goals[self.letter]
+        self.steps = 0
+        return self._get_obs()
+
+    def _get_obs(self):
+        return {"letter": self.letter, "position": self.agent_pos.copy()}
+
+    def step(self, action):
+        self.steps += 1
+        if action < 5:  # Directional action
+            delta = [(-1, 0), (1, 0), (0, -1), (0, 1)][action - 1]
+            new_pos = self.agent_pos + np.array(delta)
+            if np.all((1 <= new_pos) & (new_pos <= self.grid_size)):
+                self.agent_pos = new_pos
+
+        if action >= 5:
+            self.letter = action
+            self.goal = self.letter_goals[self.letter]
+
+        reward = 0.0
+        done = False
+        if tuple(self.agent_pos) == self.goal:
+            reward = 1.0
+            # done = True
+
+        if self.steps >= self.max_steps:
+            done = True
+
+        return self._get_obs(), reward, done, {}
+
+    def generate_expert_action(self):
+        goal = np.array(self.goal)
+        act = 5
+        direction = goal - self.agent_pos
+        if direction[0] < 0:
+            act = 1
+        elif direction[0] > 0:
+            act = 2
+        elif direction[1] < 0:
+            act = 3
+        elif direction[1] > 0:
+            act = 4
+        # Re-sample goal with probability 0.2
+        act = np.random.choice([act, 5, 6], p=[0.8, 0.1, 0.1])
         return act

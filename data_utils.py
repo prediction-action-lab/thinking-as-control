@@ -69,22 +69,22 @@ class RolloutBuffer:
         self.logprobs.append(logprob)
         self.values.append(value)
 
-    def compute_returns_and_advantages(self, gamma=0.99, lam=1.0):
-        returns = []
-        advs = []
-        gae = 0
-        next_value = 0
-        for t in reversed(range(len(self.rewards))):
-            delta = (
-                self.rewards[t]
-                + gamma * next_value * (1 - self.dones[t])
-                - self.values[t]
-            )
-            gae = delta + gamma * lam * (1 - self.dones[t]) * gae
-            advs.insert(0, gae)
-            next_value = self.values[t]
-            returns.insert(0, gae + self.values[t])
-        return torch.tensor(returns), torch.tensor(advs)
+    # def compute_returns_and_advantages(self, gamma=0.999, lam=1.0):
+    #     returns = []
+    #     advs = []
+    #     gae = 0
+    #     next_value = 0
+    #     for t in reversed(range(len(self.rewards))):
+    #         delta = (
+    #             self.rewards[t]
+    #             + gamma * next_value * (1 - self.dones[t])
+    #             - self.values[t]
+    #         )
+    #         gae = delta + gamma * lam * (1 - self.dones[t]) * gae
+    #         advs.insert(0, gae)
+    #         next_value = self.values[t]
+    #         returns.insert(0, gae + self.values[t])
+    #     return torch.tensor(returns), torch.tensor(advs)
 
 
 def sample_mini_batches(buffer, batch_size=64):
@@ -116,11 +116,11 @@ def rl_collate_fn(batch):
     ys_pad = pad_sequence(ys, batch_first=True, padding_value=0)
     log_probs_pad = pad_sequence(log_probs, batch_first=True, padding_value=1)
     # state_mask = (states_pad != 0)  # True for tokens, False for pad
-    mask = actions_pad != 0
+    mask = advs_pad != -1
     return states_pad, actions_pad, ys_pad, returns_pad, advs_pad, log_probs_pad, mask
 
 
-def compute_returns_and_advantages(rewards, values, gamma=0.99, lam=1.0):
+def compute_returns_and_advantages(rewards, values, gamma=0.99, lam=1):
     returns = np.zeros(len(rewards))
     advs = np.zeros_like(returns)
     gae = 0
