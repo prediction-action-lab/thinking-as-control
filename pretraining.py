@@ -71,9 +71,7 @@ def train_sl():
             logits, _ = policy(states, acts, mask)
 
             B, T, V = logits.size()
-            # print(B, T, V, logits.size())
             loss = loss_fn(logits.reshape(B * T, V), targets.view(B * T))
-            # exit()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -150,7 +148,7 @@ def evaluate_agent_in_two_stage(agent):
             aseq = torch.stack(action_seq).unsqueeze(0)
 
             action_mask = None
-            action_mask = torch.tensor([0, 1, 1, 1, 1, 0, 0, 0])
+            # action_mask = torch.tensor([0, 1, 1, 1, 1, 0, 0, 0])
 
             with torch.no_grad():
                 logits, _ = agent(sseq, aseq, action_mask=action_mask)
@@ -189,7 +187,7 @@ def evaluate_agent_in_two_stage(agent):
 if __name__ == "__main__":
 
     # env, agent = train_sl()
-    agent = torch.load("pretrained_3x3.pth", weights_only=False)
+    agent = torch.load("pretrained_10x10.pth", weights_only=False)
     evaluate_agent(agent)
     evaluate_agent_in_two_stage(agent)
-    torch.save(agent, 'pretrained_3x3.pth')
+    torch.save(agent, 'pretrained_10x10.pth')

@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import gym
 import torch
@@ -23,37 +24,61 @@ from envs import GridWorldEnv, TwoStageGridWorldEnv, DebugEnv
 from policies import TransformerPolicy
 
 
-# TODO
-# 1. Validate that thinking is learned (and potentially unlearned)
-# 2. Learn but reject thinking actions (action masking)
-# 3. Learn from scratch
-# 4. Learn from scratch w/o thinking
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run a pretrained PyTorch model with specified options.")
+
+    parser.add_argument(
+        '--model_path', type=str, required=True, default='pretrained_5x5.pth',
+        help='Path to the pretrained PyTorch model file (.pt or .pth)'
+    )
+
+    parser.add_argument(
+        '--mask_thinking', action='store_true', default=False,
+        help='If set, mask out "thinking" actions during evaluation'
+    )
+
+    parser.add_argument(
+        '--seed', type=int, default=42,
+        help='Random seed for reproducibility (default: 42)'
+    )
+
+    parser.add_argument(
+        '--output_file', type=str, required=True,
+        help='Path to write evaluation results (e.g., results.json or results.csv)'
+    )
+
+    return parser.parse_args()
 
 
-def train_rl_v2(policy):
+def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
     env = TwoStageGridWorldEnv()
     # env = GridWorldEnv()
     # env = DebugEnv()
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+    # if torch.backends.mps.is_available():
+    #     device = torch.device("mps")
+    # else:
+    #     device = torch.device("cpu")
     device = torch.device("cpu")
 
-    from_scratch = False
-    use_mask = False
+    # from_scratch = False
+    # use_mask = False
 
-    seed = 6  # for debugging
-    torch.manual_seed(seed)
-    filename = 'pretrained_'
-    if from_scratch:
+    output_file = f"{output_file_base}_{seed}"
+
+    if model_path is not None:
+        policy = torch.load(model_path, weights_only=False)
+    else:
         policy = TransformerPolicy().to(device)
-        filename = 'scratch_'
+
+    np.random.seed(seed)
+    torch.manual_seed(np.random.randint(1e5))
+    random.seed(np.random.randint(1e5))
+
     action_mask = None
-    if use_mask:
+    if use_action_mask:
         action_mask = torch.tensor([0, 1, 1, 1, 1, 0, 0, 0])
-        filename += 'use-mask_'
-    filename += f"{seed}"
+        # filename += 'use-mask_'
+    # filename += f"{seed}"
 
     vf_and_policy_optimizer = optim.Adam(policy.parameters(), lr=1e-5, weight_decay=0.0)
     vf_optimizer = optim.Adam(policy.parameters(), lr=1e-5, weight_decay=0.0)
@@ -178,8 +203,8 @@ def train_rl_v2(policy):
                 loss.backward()
                 optimizer.step()
 
-        np.save(f"{filename}.npy", rewards)
-        np.save(f"{filename}-thinkactions.npy", frac_thinking_actions)
+        np.save(f"{output_file}.npy", rewards)
+        np.save(f"{output_file}-thinkactions.npy", frac_thinking_actions)
     plt.plot(rewards)
     plt.show()
 
@@ -229,10 +254,16 @@ def evaluate_agent(env, agent):
 
 if __name__ == "__main__":
 
+    args = parse_args()
+    seed = args.seed
+    model_path = args.model_path
+    results_file = args.output_file
+    use_action_mask = args.mask_thinking
+
     # env, agent = train_sl()
     # evaluate_agent(env, agent)
     # torch.save(agent, 'initial_model.pth')
     # agent = torch.load("initial_model.pth", weights_only=False)
-    agent = torch.load("pretrained_5x5.pth", weights_only=False)
-    env2, agent = train_rl_v2(agent)
+
+    env2, agent = train_rl_v2(results_file, seed, model_path, use_action_mask)
     evaluate_agent(env2, agent)

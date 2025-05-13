@@ -7,7 +7,7 @@ import gym
 # GRID_SIZE = 5
 # MAX_STEPS = 20
 
-GRID_SIZE = 5
+GRID_SIZE = 3
 MAX_STEPS = (GRID_SIZE // 2) * 2 + 2 * GRID_SIZE + 6
 # print(MAX_STEPS)
 
@@ -261,6 +261,8 @@ class PlayGridWorldEnv(gym.Env):
             act = 3
         elif direction[1] > 0:
             act = 4
+        else:
+            act = np.random.choice([5, 6])
         # Re-sample goal with probability 0.2
         act = np.random.choice([act, 5, 6], p=[0.8, 0.1, 0.1])
         return act

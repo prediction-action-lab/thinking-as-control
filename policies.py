@@ -30,7 +30,7 @@ def generate_causal_mask(seq_len, device='cpu'):
 
 
 class TransformerPolicy(nn.Module):
-    def __init__(self, d_model=128, nhead=4, num_layers=2, max_len=25):
+    def __init__(self, d_model=128, nhead=4, num_layers=2, max_len=50):
         super().__init__()
         self.d_model = d_model
         vocab_size = 7 + 1
