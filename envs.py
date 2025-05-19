@@ -9,7 +9,6 @@ import gym
 
 GRID_SIZE = 5
 MAX_STEPS = (GRID_SIZE // 2) * 2 + 2 * GRID_SIZE + 6
-# print(MAX_STEPS)
 
 
 class GridWorldEnv(gym.Env):
@@ -20,12 +19,9 @@ class GridWorldEnv(gym.Env):
         self.deterministic_start = False
         self.letter_goals = {
             5: (self.grid_size, self.grid_size),  # 'A'
-            # 5: (1, 1)
-            # 6: (1, 1),  # 'B'
-            # 7: (5, 3),  # 'C'
         }
         if n_goals > 1:
-            self.letter_goals[6] = (1, 1)
+            self.letter_goals[6] = (1, 1)  # 'C'
         self.letters = list(self.letter_goals.keys())
         self.action_meanings = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B", "C"]
         self.action_space = gym.spaces.Discrete(len(self.action_meanings))
@@ -48,8 +44,6 @@ class GridWorldEnv(gym.Env):
                     np.random.randint(1, self.grid_size),
                 ]
             )
-        # self.agent_pos = random.choice([np.array([4, 3]), np.array([1,2])])
-        # self.agent_pos = np.array([1, 2])
         self.letter = random.choice(self.letters)
         self.goal = self.letter_goals[self.letter]
         self.steps = 0
@@ -101,8 +95,8 @@ class TwoStageGridWorldEnv(GridWorldEnv):
         self.letter_goals = {
             5: [(self.grid_size, self.grid_size)],  # 'A'
             6: [(1, 1)],  # 'B'
-            # 7: None,  # 'C'
         }
+        # Goal for "C" (7) is to do "A" and then "B"
         self.letter_goals[7] = [self.letter_goals[5][0], self.letter_goals[6][0]]
         self.letters = list(self.letter_goals.keys())
         self.action_meanings = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B", "C"]
@@ -128,8 +122,6 @@ class TwoStageGridWorldEnv(GridWorldEnv):
                     np.random.randint(1, self.grid_size),
                 ]
             )
-        # self.agent_pos = random.choice([np.array([4, 3]), np.array([1,2])])
-        # self.agent_pos = np.array([1, 2])
         self.letter = 7
         self.goal = self.letter_goals[self.letter]
         self.steps = 0
@@ -163,7 +155,7 @@ class TwoStageGridWorldEnv(GridWorldEnv):
     def generate_expert_action(self):
         goal = np.array(self.goal[self.goal_ind])
         act = 5
-        # print(goal, self.agent_pos)
+
         direction = goal - self.agent_pos
         if direction[0] < 0:
             act = 1
@@ -176,24 +168,6 @@ class TwoStageGridWorldEnv(GridWorldEnv):
         return act
 
 
-class DebugEnv(GridWorldEnv):
-    def __init__(self):
-        self.letter = 5
-        self.agent_pos = [1, 1]
-        # self.grid_size = 2
-
-    def reset(self):
-        return self._get_obs()
-
-    def step(self, action):
-        if action == 5:
-            reward = 1
-        else:
-            reward = 0
-
-        return self._get_obs(), reward, True, {}
-
-
 class PlayGridWorldEnv(gym.Env):
     def __init__(self):
         super(PlayGridWorldEnv, self).__init__()
@@ -202,9 +176,7 @@ class PlayGridWorldEnv(gym.Env):
         self.deterministic_start = False
         self.letter_goals = {
             5: (self.grid_size, self.grid_size),  # 'A'
-            # 5: (1, 1)
             6: (1, 1),  # 'B'
-            # 7: (5, 3),  # 'C'
         }
         self.letters = list(self.letter_goals.keys())
         self.action_meanings = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B", "C"]
@@ -273,6 +245,23 @@ class PlayGridWorldEnv(gym.Env):
             act = 4
         else:
             act = np.random.choice([5, 6])
-        # Re-sample goal with probability 0.2
+        # Re-sample goal with probability 0.25
         act = np.random.choice([act, 5, 6], p=[0.75, 0.125, 0.125])
         return act
+
+
+class DebugEnv(GridWorldEnv):
+    def __init__(self):
+        self.letter = 5
+        self.agent_pos = [1, 1]
+
+    def reset(self):
+        return self._get_obs()
+
+    def step(self, action):
+        if action == 5:
+            reward = 1
+        else:
+            reward = 0
+
+        return self._get_obs(), reward, True, {}

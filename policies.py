@@ -50,7 +50,7 @@ class TransformerPolicy(nn.Module):
         self.max_len = max_len
 
     def forward(
-        self, state_seq, action_seq, input_mask=None, debug=False, action_mask=None
+        self, state_seq, action_seq, input_mask=None, action_mask=None
     ):
 
         batch_size = state_seq.shape[0]
@@ -71,11 +71,6 @@ class TransformerPolicy(nn.Module):
         interleaved[:, :, : self.d_model] = action_embed
         interleaved[:, :, self.d_model:] = state_embed
         input_seq = interleaved
-        if debug:
-            print(input_seq.shape)
-            print(input_mask.shape)
-            print(input_mask.transpose(0, 1).shape)
-            print(interleaved)
 
         if self.use_position_encoding:
             input_seq *= math.sqrt(self.d_model)
