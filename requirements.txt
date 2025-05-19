@@ -1,0 +1,4 @@
+pytorch
+seaborn
+matplotlib
+numpy
