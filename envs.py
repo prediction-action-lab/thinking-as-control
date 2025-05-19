@@ -1,3 +1,4 @@
+"""Environments used for proof-of-concept thinking experiments."""
 import random
 import numpy as np
 import gym

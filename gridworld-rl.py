@@ -1,3 +1,4 @@
+"""RL training code for learning to think."""
 import argparse
 import numpy as np
 import gym
@@ -11,15 +12,7 @@ import random
 from torch.utils.data import Dataset, DataLoader
 from matplotlib import pyplot as plt
 
-from data_utils import (
-    RolloutBuffer,
-    sample_mini_batches,
-    NextTokenDataset,
-    collate_fn,
-    rl_collate_fn,
-    RLDataset,
-    compute_returns_and_advantages,
-)
+from data_utils import rl_collate_fn, RLDataset, compute_returns_and_advantages
 from envs import TwoStageGridWorldEnv
 from policies import TransformerPolicy
 

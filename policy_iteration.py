@@ -1,3 +1,4 @@
+"""Illustration of learning to think via policy iteration."""
 import numpy as np
 import matplotlib.pyplot as plt
 from heatmap import plot_heatmap
@@ -13,9 +14,6 @@ class GridworldMDP:
         self.values = np.zeros(self.grid_size)  # Value function
 
         # Policy initialization
-        # self.policy = np.random.choice(self._actions, size=self.grid_size)  # random
-        # self.policy = np.full(self.grid_size, 'L', dtype=str)  # sub-optimal
-        # self.policy = np.full(self.grid_size, 'R', dtype=str)  # Optimal
         thought_policy = np.full(
             (self.grid_size[0] - 1, self.grid_size[1]), "R", dtype=str
         )
@@ -209,6 +207,5 @@ if __name__ == "__main__":
             policy_data[f"Policy and Values at Iteration {itr + 1}"] = np.array(
                 policy, copy=True
             )
-    # mdp.plot_policy_and_values()
-    print(value_data)
+
     plot_heatmap(value_data, policy_data)

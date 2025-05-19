@@ -1,3 +1,4 @@
+"""Code to produce thinking-primed pre-trained model."""
 import numpy as np
 import gym
 import torch
@@ -25,10 +26,6 @@ from policies import TransformerPolicy
 
 def train_sl():
     env = PlayGridWorldEnv()
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
     device = torch.device("cpu")
     policy = TransformerPolicy().to(device)
     optimizer = optim.Adam(policy.parameters(), lr=1e-4)
@@ -82,54 +79,14 @@ def train_sl():
     return env, policy
 
 
-def evaluate_agent(agent):
-
-    env = GridWorldEnv()
-    num_episodes = 100
-    total_reward = 0.0
-    debug = False
-
-    for episode in range(num_episodes):
-        obs = env.reset()
-        done = False
-
-        letter = torch.tensor([obs["letter"]])
-        state_seq = [torch.tensor(obs["position"])]
-        action_seq = [torch.tensor(obs["letter"])]
-
-        while not done:
-            sseq = torch.stack(state_seq).unsqueeze(0)
-            if debug:
-                print(action_seq)
-            aseq = torch.stack(action_seq).unsqueeze(0)
-
-            with torch.no_grad():
-                logits, _ = agent(sseq, aseq)
-                probs = F.softmax(logits, dim=-1)[0][-1]
-                if debug:
-                    print(sseq, aseq, probs)
-                dist = Categorical(probs)
-                action = dist.sample()
-                if debug:
-                    print(action)
-
-            next_obs, reward, done, _ = env.step(action)
-            total_reward += reward
-
-            action_seq.append(action)
-            obs = next_obs
-            state_seq.append(torch.tensor(obs["position"]))
-
-    print(total_reward / num_episodes)
-
-
 def evaluate_agent_in_two_stage(agent):
 
     env = TwoStageGridWorldEnv()
     num_episodes = 200
     total_reward = 0.0
-    debug = False
     action_counts = np.zeros(8)
+    mask_thinking_actions = False
+    prompt_thinking = False
 
     for episode in range(num_episodes):
         obs = env.reset()
@@ -143,35 +100,29 @@ def evaluate_agent_in_two_stage(agent):
 
         while not done:
             sseq = torch.stack(state_seq).unsqueeze(0)
-            if debug:
-                print(action_seq)
             aseq = torch.stack(action_seq).unsqueeze(0)
 
             action_mask = None
-            # action_mask = torch.tensor([0, 1, 1, 1, 1, 0, 0, 0])
+            if mask_thinking_actions:
+                action_mask = torch.tensor([0, 1, 1, 1, 1, 0, 0, 0])
 
             with torch.no_grad():
                 logits, _ = agent(sseq, aseq, action_mask=action_mask)
                 probs = F.softmax(logits, dim=-1)[0][-1]
-                if debug:
-                    print(sseq, aseq, probs)
                 dist = Categorical(probs)
                 action = dist.sample()
-                if debug:
-                    # print(action)
-                    print(probs)
-                if timestep == 0:
-                    action = torch.tensor(5)
-                elif (
-                    env.agent_pos == env.letter_goals[5][0]
-                ).all() and not past_checkpoint:
-                    if debug:
-                        print("Goal reached")
-                    action = torch.tensor(6)
-                    past_checkpoint = True
-                # elif action >= 5:
-                #     p = probs[1:5]
-                #     action = np.argmax(p) + 1
+
+                if prompt_thinking:
+                    if timestep == 0:
+                        action = torch.tensor(5)
+                    elif (
+                        env.agent_pos == env.letter_goals[5][0]
+                    ).all() and not past_checkpoint:
+                        action = torch.tensor(6)
+                        past_checkpoint = True
+                    # elif action >= 5:
+                    #     p = probs[1:5]
+                    #     action = np.argmax(p) + 1
                 action_counts[action] += 1
 
             next_obs, reward, done, _ = env.step(action)
@@ -181,10 +132,6 @@ def evaluate_agent_in_two_stage(agent):
             action_seq.append(action)
             obs = next_obs
             state_seq.append(torch.tensor(obs["position"]))
-        # print('Episode:')
-        # print('states', state_seq)
-        # print('actions', action_seq)
-        # print('return', reward)
 
     print(total_reward / num_episodes)
     print(action_counts)
@@ -192,9 +139,7 @@ def evaluate_agent_in_two_stage(agent):
 
 if __name__ == "__main__":
 
-    # env, agent = train_sl()
-    agent = torch.load("pretrained_10x10.pth", weights_only=False)
-    # agent = torch.load('rl-trained.pth', weights_only=False)
-    # evaluate_agent(agent)
+    env, agent = train_sl()
+    # agent = torch.load("pretrained_5x5.pth", weights_only=False)
     evaluate_agent_in_two_stage(agent)
-    torch.save(agent, "pretrained_10x10.pth")
+    torch.save(agent, "pretrained_5x5.pth")

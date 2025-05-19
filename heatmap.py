@@ -1,3 +1,4 @@
+"""Code to produce heatmaps used in policy iteration experiment."""
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt

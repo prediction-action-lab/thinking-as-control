@@ -1,12 +1,10 @@
+"""Code to plot RL training in thinking experiments."""
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-# import matplotlib.pyplot as plt
 import pandas as pd
 
-# bases = ['no-mask_auto_pretrained_', 'no-mask_auto_scratch_', 'mask_auto_pretrained_']
-# bases = ['pretrained_', 'pretrained_mask_', 'scratch_', 'scratch_']
 bases = ["pretrained_2_", "pretrained_mask_2_", "scratch_", "scratch_nomask_"]
 names = ["Pretrained-Think", "Pretrained-NoThink", "Scratch-NoThink", "Scratch-Think"]
 
@@ -22,25 +20,11 @@ for base, name in zip(bases, names):
 
         try:
             # x = np.load(f"5x5-results/{base}{d}.npy")
-            # x = np.load(f"3x3-results/{base}{d}.npy")
             x = np.load(f"5x5-results/{base}{d}-thinkactions.npy")
         except FileNotFoundError:
             continue
         for t, val in enumerate(x):
             data_list.append({"timepoint": t, "value": val, "series": name, "trial": d})
-        # results[base].append(x)
-
-    # data = np.stack(results[base])
-    # # Convert to long-form DataFrame for seaborn
-    # df = pd.DataFrame(data)
-    # df['trial'] = df.index
-    # df_melted = df.melt(id_vars='trial', var_name='timepoint', value_name='value')
-    # df_melted['timepoint'] = df_melted['timepoint'].astype(int)
-    # sns.lineplot(data=df_melted, x='timepoint', y='value', errorbar='ci', n_boot=1000)
-
-    # yerr = (1.96 / np.sqrt(3)) * np.std(results[base])
-    # plt.plot(np.mean(results[base], axis=0))
-    # plt.errorbar(x=np.arange(x.size), y=np.mean(results[base], axis=0), yerr=np.std(results[base], axis=0))
 
 # Create DataFrame
 df_all = pd.DataFrame(data_list)
@@ -57,10 +41,10 @@ plt.tick_params(axis="both", labelsize=20)
 plt.legend(fontsize=20, ncols=2)
 # plt.title("Mean Across Trials with Bootstrap CI")
 plt.xlabel("Iteration", fontsize=25)
-# plt.ylabel("Success Rate", fontsize=25)
-plt.ylabel("Fraction Time Thinking", fontsize=25)
+plt.ylabel("Success Rate", fontsize=25)
+# plt.ylabel("Fraction Time Thinking", fontsize=25)
 # plt.xlim([0, 105])
 # plt.ylim([-0.199, 1.1])
-plt.ylim([-0.05, 0.6])
+# plt.ylim([-0.05, 0.6])
 plt.tight_layout()
 plt.show()
