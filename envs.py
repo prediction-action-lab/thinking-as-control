@@ -7,7 +7,7 @@ import gym
 # GRID_SIZE = 5
 # MAX_STEPS = 20
 
-GRID_SIZE = 3
+GRID_SIZE = 5
 MAX_STEPS = (GRID_SIZE // 2) * 2 + 2 * GRID_SIZE + 6
 # print(MAX_STEPS)
 
@@ -43,7 +43,10 @@ class GridWorldEnv(gym.Env):
             self.agent_pos = [self.grid_size // 2 + 1, self.grid_size // 2 + 1]
         else:
             self.agent_pos = np.array(
-                [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
+                [
+                    np.random.randint(1, self.grid_size),
+                    np.random.randint(1, self.grid_size),
+                ]
             )
         # self.agent_pos = random.choice([np.array([4, 3]), np.array([1,2])])
         # self.agent_pos = np.array([1, 2])
@@ -115,10 +118,15 @@ class TwoStageGridWorldEnv(GridWorldEnv):
 
     def reset(self):
         if self.deterministic_start:
-            self.agent_pos = np.array([self.grid_size // 2 + 1, self.grid_size // 2 + 1])
+            self.agent_pos = np.array(
+                [self.grid_size // 2 + 1, self.grid_size // 2 + 1]
+            )
         else:
             self.agent_pos = np.array(
-                [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
+                [
+                    np.random.randint(1, self.grid_size),
+                    np.random.randint(1, self.grid_size),
+                ]
             )
         # self.agent_pos = random.choice([np.array([4, 3]), np.array([1,2])])
         # self.agent_pos = np.array([1, 2])
@@ -169,7 +177,6 @@ class TwoStageGridWorldEnv(GridWorldEnv):
 
 
 class DebugEnv(GridWorldEnv):
-
     def __init__(self):
         self.letter = 5
         self.agent_pos = [1, 1]
@@ -216,7 +223,10 @@ class PlayGridWorldEnv(gym.Env):
             self.agent_pos = [self.grid_size // 2 + 1, self.grid_size // 2 + 1]
         else:
             self.agent_pos = np.array(
-                [np.random.randint(1, self.grid_size), np.random.randint(1, self.grid_size)]
+                [
+                    np.random.randint(1, self.grid_size),
+                    np.random.randint(1, self.grid_size),
+                ]
             )
         self.letter = random.choice(self.letters)
         self.goal = self.letter_goals[self.letter]
@@ -264,5 +274,5 @@ class PlayGridWorldEnv(gym.Env):
         else:
             act = np.random.choice([5, 6])
         # Re-sample goal with probability 0.2
-        act = np.random.choice([act, 5, 6], p=[0.8, 0.1, 0.1])
+        act = np.random.choice([act, 5, 6], p=[0.75, 0.125, 0.125])
         return act

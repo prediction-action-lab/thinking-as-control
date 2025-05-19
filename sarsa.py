@@ -33,18 +33,24 @@ def sarsa(env, episodes=100, alpha=0.1, gamma=0.9, epsilon=0.1):
         G, t = 0, 0
         while not done:
             next_state, reward, done = env.step(state, action)
-            G += gamma ** t * reward
+            G += gamma**t * reward
             t += 1
 
             if explore_eps_greedy:
-                next_action = epsilon_greedy_policy(Q, next_state, epsilon, env.actions())
+                next_action = epsilon_greedy_policy(
+                    Q, next_state, epsilon, env.actions()
+                )
             else:
                 pi_probs = np.exp(policy[next_state])
                 pi_probs /= np.sum(pi_probs, axis=-1)
                 next_action = np.random.choice(len(env.actions()), p=pi_probs)
 
             # SARSA update rule
-            delta = reward + gamma * Q[next_state][next_action] * (not done) - Q[state][action]
+            delta = (
+                reward
+                + gamma * Q[next_state][next_action] * (not done)
+                - Q[state][action]
+            )
             Q[state][action] += alpha * delta
 
             # Updates policy

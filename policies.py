@@ -15,7 +15,7 @@ class PositionalEncoding(nn.Module):
         pe[:, 1::2] = torch.cos(position * div_term)
         print(pe[:, 0])
         pe = pe.unsqueeze(0)  # shape: (1, max_len, d_model)
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
         # x: (batch_size, seq_len, d_model)
@@ -23,9 +23,9 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :seq_len]
 
 
-def generate_causal_mask(seq_len, device='cpu'):
+def generate_causal_mask(seq_len, device="cpu"):
     # Shape: [seq_len, seq_len]
-    mask = torch.triu(torch.full((seq_len, seq_len), float('-inf')), diagonal=1)
+    mask = torch.triu(torch.full((seq_len, seq_len), float("-inf")), diagonal=1)
     return mask.to(device)
 
 
@@ -33,8 +33,7 @@ class TransformerPolicy(nn.Module):
     def __init__(self, d_model=128, nhead=4, num_layers=2, max_len=50):
         super().__init__()
         self.d_model = d_model
-        vocab_size = 7 + 1
-        # self.letter_embedding = nn.Embedding(3, d_model)
+        vocab_size = 7 + 1  # 4 movement actions, 3 thinking actions, 1 padding action
         self.state_embedding = nn.Linear(2, d_model)
         self.action_embedding = nn.Embedding(vocab_size, d_model, padding_idx=0)
         self.pos_encoder = PositionalEncoding(2 * d_model, max_len=max_len)
@@ -50,7 +49,9 @@ class TransformerPolicy(nn.Module):
         self.use_position_encoding = True
         self.max_len = max_len
 
-    def forward(self, state_seq, action_seq, input_mask=None, debug=False, action_mask=None):
+    def forward(
+        self, state_seq, action_seq, input_mask=None, debug=False, action_mask=None
+    ):
 
         batch_size = state_seq.shape[0]
         seq_len = state_seq.shape[1]
@@ -67,7 +68,7 @@ class TransformerPolicy(nn.Module):
         interleaved = torch.zeros(
             batch_size, seq_len, 2 * self.d_model, device=state_embed.device
         )
-        interleaved[:, :, :self.d_model] = action_embed
+        interleaved[:, :, : self.d_model] = action_embed
         interleaved[:, :, self.d_model:] = state_embed
         input_seq = interleaved
         if debug:
@@ -85,11 +86,10 @@ class TransformerPolicy(nn.Module):
         input_seq = input_seq.transpose(0, 1)
         src_key_padding = src_key_padding.transpose(0, 1)
 
-        x = self.transformer(input_seq, mask=causal_mask, src_key_padding_mask=src_key_padding)
-        if debug:
-            print("x")
-            print(x)
-            print(x.shape)
+        x = self.transformer(
+            input_seq, mask=causal_mask, src_key_padding_mask=src_key_padding
+        )
+
         logits = self.policy_head(x)
         logits = logits * self.temperature
         logits = logits.transpose(0, 1)

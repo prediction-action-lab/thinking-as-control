@@ -89,7 +89,7 @@ class PolicyGradientAgent:
         for reward in reversed(self.episode_rewards):
             cumulative_reward = reward + self.gamma * cumulative_reward
             discounted_rewards.insert(0, cumulative_reward)
-        
+
         discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
         state_tensor = torch.tensor(self.episode_states, dtype=torch.long)
         action_tensor = torch.tensor(self.episode_actions, dtype=torch.long)
@@ -106,7 +106,9 @@ class PolicyGradientAgent:
 
         # Compute policy loss
         action_probs = self.policy(state_tensor)
-        selected_action_probs = action_probs.gather(1, action_tensor.unsqueeze(1)).squeeze()
+        selected_action_probs = action_probs.gather(
+            1, action_tensor.unsqueeze(1)
+        ).squeeze()
         policy_loss = -torch.mean(torch.log(selected_action_probs) * advantages)
 
         # Update policy network
@@ -144,6 +146,7 @@ def train_agent():
     print(f"\tState counts: {state_counts}")
     return np.argmax(state_counts)
 
+
 count_equal_one = 0
 
 n_trials = 100
@@ -152,7 +155,7 @@ for _ in range(n_trials):
     if max_state == 1:
         count_equal_one += 1
 
-print(count_equal_one/n_trials)
+print(count_equal_one / n_trials)
 
 # state = env.reset()
 # for _ in range(50):

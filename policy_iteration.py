@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from heatmap import plot_heatmap
 
 
 class GridworldMDP:
@@ -15,8 +16,10 @@ class GridworldMDP:
         # self.policy = np.random.choice(self._actions, size=self.grid_size)  # random
         # self.policy = np.full(self.grid_size, 'L', dtype=str)  # sub-optimal
         # self.policy = np.full(self.grid_size, 'R', dtype=str)  # Optimal
-        thought_policy = np.full((self.grid_size[0] - 1, self.grid_size[1]), 'R', dtype=str)
-        no_thought_policy = np.full((1, self.grid_size[1]), 'L', dtype=str)
+        thought_policy = np.full(
+            (self.grid_size[0] - 1, self.grid_size[1]), "R", dtype=str
+        )
+        no_thought_policy = np.full((1, self.grid_size[1]), "L", dtype=str)
         self.policy = np.vstack([thought_policy, no_thought_policy])
 
     def actions(self):
@@ -49,8 +52,8 @@ class GridworldMDP:
     def init_Q(self):
         return np.zeros((self.grid_size[0], self.grid_size[1], 4))
 
-    def init_policy_logits(self, init='uniform'):
-        if init == 'uniform':
+    def init_policy_logits(self, init="uniform"):
+        if init == "uniform":
             return np.zeros((self.grid_size[0], self.grid_size[1], 4))
         return np.zeros((self.grid_size[0], self.grid_size[1], 4))
 
@@ -112,29 +115,68 @@ class GridworldMDP:
         for row in self.policy:
             print(" ".join(row))
 
+        return self.policy
+
     def display_values(self):
         print(np.round(self.values, 2))
+        return np.round(self.values, 2)
 
     def plot_policy_and_values(self):
         fig, ax = plt.subplots()
         fig.set_size_inches(13.5, 7.5)
-        ax.imshow(self.values, cmap='coolwarm', interpolation='nearest')
+        ax.imshow(self.values, cmap="coolwarm", interpolation="nearest")
         for i in range(self.grid_size[0]):
             for j in range(self.grid_size[1]):
                 action = self.policy[i, j]
-                if action == 'U':
-                    ax.arrow(j, i + 0.15, 0, -0.3, head_width=0.1, head_length=0.1, fc='black', ec='black')
-                elif action == 'D':
-                    ax.arrow(j, i - 0.15, 0, 0.3, head_width=0.1, head_length=0.1, fc='black', ec='black')
-                elif action == 'L':
-                    ax.arrow(j + 0.15, i, -0.3, 0, head_width=0.1, head_length=0.1, fc='black', ec='black')
-                elif action == 'R':
-                    ax.arrow(j - 0.15, i, 0.3, 0, head_width=0.1, head_length=0.1, fc='black', ec='black')
+                if action == "U":
+                    ax.arrow(
+                        j,
+                        i + 0.15,
+                        0,
+                        -0.3,
+                        head_width=0.1,
+                        head_length=0.1,
+                        fc="black",
+                        ec="black",
+                    )
+                elif action == "D":
+                    ax.arrow(
+                        j,
+                        i - 0.15,
+                        0,
+                        0.3,
+                        head_width=0.1,
+                        head_length=0.1,
+                        fc="black",
+                        ec="black",
+                    )
+                elif action == "L":
+                    ax.arrow(
+                        j + 0.15,
+                        i,
+                        -0.3,
+                        0,
+                        head_width=0.1,
+                        head_length=0.1,
+                        fc="black",
+                        ec="black",
+                    )
+                elif action == "R":
+                    ax.arrow(
+                        j - 0.15,
+                        i,
+                        0.3,
+                        0,
+                        head_width=0.1,
+                        head_length=0.1,
+                        fc="black",
+                        ec="black",
+                    )
                 # ax.text(j, i, round(self.values[i, j], 2), ha='center', va='center', color='white')
         plt.xticks(range(self.grid_size[1]))
         plt.yticks(range(self.grid_size[0]))
         plt.gca().invert_yaxis()
-        plt.colorbar(ax.imshow(self.values, cmap='coolwarm', interpolation='nearest'))
+        plt.colorbar(ax.imshow(self.values, cmap="coolwarm", interpolation="nearest"))
         plt.title("State Values")
         plt.show()
 
@@ -150,12 +192,23 @@ if __name__ == "__main__":
 
     mdp = GridworldMDP(grid_size, terminal_states, rewards)
     mdp.policy_evaluation()
+
+    value_data = {}
+    policy_data = {}
+
     for itr in range(10):
         print("Iteration %d" % itr)
         mdp.step_policy_iteration()
         print("Optimal Policy:")
-        mdp.display_policy()
+        policy = mdp.display_policy()
         print("State Values:")
-        mdp.display_values()
+        values = mdp.display_values()
         print()
-    mdp.plot_policy_and_values()
+        if itr in [0, 3, 9]:
+            value_data[f"Policy and Values at Iteration {itr + 1}"] = values
+            policy_data[f"Policy and Values at Iteration {itr + 1}"] = np.array(
+                policy, copy=True
+            )
+    # mdp.plot_policy_and_values()
+    print(value_data)
+    plot_heatmap(value_data, policy_data)

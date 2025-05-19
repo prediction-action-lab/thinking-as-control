@@ -25,32 +25,51 @@ from policies import TransformerPolicy
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run a pretrained PyTorch model with specified options.")
-
-    parser.add_argument(
-        '--model_path', type=str, required=True, default='pretrained_5x5.pth',
-        help='Path to the pretrained PyTorch model file (.pt or .pth)'
+    parser = argparse.ArgumentParser(
+        description="Run a pretrained PyTorch model with specified options."
     )
 
     parser.add_argument(
-        '--mask_thinking', action='store_true', default=False,
-        help='If set, mask out "thinking" actions during evaluation'
+        "--model_path",
+        type=str,
+        default=None,
+        help="Path to the pretrained PyTorch model file (.pt or .pth)",
     )
 
     parser.add_argument(
-        '--seed', type=int, default=42,
-        help='Random seed for reproducibility (default: 42)'
+        "--model_save_path",
+        type=str,
+        default=None,
+        help="Path to save the trained model file (.pt or .pth)",
     )
 
     parser.add_argument(
-        '--output_file', type=str, required=True,
-        help='Path to write evaluation results (e.g., results.json or results.csv)'
+        "--mask_thinking",
+        action="store_true",
+        default=False,
+        help='If set, mask out "thinking" actions during evaluation',
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility (default: 42)",
+    )
+
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        required=True,
+        help="Path to write evaluation results (e.g., results.json or results.csv)",
     )
 
     return parser.parse_args()
 
 
-def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
+def train_rl_v2(
+    output_file_base, seed, model_path, use_action_mask=False, save_path=None
+):
     env = TwoStageGridWorldEnv()
     # env = GridWorldEnv()
     # env = DebugEnv()
@@ -141,7 +160,9 @@ def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
 
         frac_thinking_actions[itr] = action_counts[5:].sum() / action_counts.sum()
         rewards[itr] = total_reward / num_episodes
-        print(f'Iter {itr}: Avg Return = {rewards[itr]}, Frac Thinking = {frac_thinking_actions[itr]}')
+        print(
+            f"Iter {itr}: Avg Return = {rewards[itr]}, Frac Thinking = {frac_thinking_actions[itr]}"
+        )
         # print(action_counts)
         # if rewards[itr] == 0:
         #     continue
@@ -149,7 +170,9 @@ def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
         dataset = RLDataset(episodes)
 
         # Policy Optimization
-        loader = DataLoader(dataset, batch_size=num_episodes, shuffle=True, collate_fn=rl_collate_fn)
+        loader = DataLoader(
+            dataset, batch_size=num_episodes, shuffle=True, collate_fn=rl_collate_fn
+        )
         # loss_fn = nn.CrossEntropyLoss(ignore_index=0)  # ignore pad tokens
 
         if vf_burn_in_iters > 0 and itr == 0:
@@ -171,7 +194,9 @@ def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
                 logprobs = dist.log_prob(targets)
 
                 advs = returns
-                binary_mask = mask.to(dtype=torch.uint8)  # Or torch.int, torch.long, etc.
+                binary_mask = mask.to(
+                    dtype=torch.uint8
+                )  # Or torch.int, torch.long, etc.
 
                 if USE_PPO:
                     ratio = torch.exp(logprobs - old_logprobs)
@@ -192,7 +217,7 @@ def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
                 if vf_burn_in_iters > 0 and itr == 0:
                     loss = mse_loss
                     optimizer = vf_optimizer
-                    print('Value Loss', loss.item())
+                    print("Value Loss", loss.item())
                 else:
                     loss = -(surr.sum() / num_non_masked_elements) + mse_loss
                     optimizer = vf_and_policy_optimizer
@@ -205,6 +230,9 @@ def train_rl_v2(output_file_base, seed, model_path, use_action_mask=False):
 
         np.save(f"{output_file}.npy", rewards)
         np.save(f"{output_file}-thinkactions.npy", frac_thinking_actions)
+        if save_path is not None:
+            torch.save(policy, save_path)
+
     plt.plot(rewards)
     plt.show()
 
@@ -259,11 +287,14 @@ if __name__ == "__main__":
     model_path = args.model_path
     results_file = args.output_file
     use_action_mask = args.mask_thinking
+    save_path = args.model_save_path
 
     # env, agent = train_sl()
     # evaluate_agent(env, agent)
     # torch.save(agent, 'initial_model.pth')
     # agent = torch.load("initial_model.pth", weights_only=False)
 
-    env2, agent = train_rl_v2(results_file, seed, model_path, use_action_mask)
+    env2, agent = train_rl_v2(
+        results_file, seed, model_path, use_action_mask, save_path=save_path
+    )
     evaluate_agent(env2, agent)

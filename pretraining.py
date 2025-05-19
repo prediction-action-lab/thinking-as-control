@@ -34,7 +34,7 @@ def train_sl():
     optimizer = optim.Adam(policy.parameters(), lr=1e-4)
 
     episodes = []
-    num_episodes = 200
+    num_episodes = 500
 
     for episode in range(num_episodes):
         obs = env.reset()
@@ -60,10 +60,10 @@ def train_sl():
     dataset = NextTokenDataset(episodes, block_size=1)
 
     # Optimization
-    loader = DataLoader(dataset, batch_size=20, shuffle=True, collate_fn=collate_fn)
+    loader = DataLoader(dataset, batch_size=100, shuffle=True, collate_fn=collate_fn)
     loss_fn = nn.CrossEntropyLoss(ignore_index=0)  # ignore pad tokens
 
-    NUM_EPOCHS = 500
+    NUM_EPOCHS = 1000
     for epoch in range(NUM_EPOCHS):
 
         for states, acts, targets, mask in loader:
@@ -126,7 +126,7 @@ def evaluate_agent(agent):
 def evaluate_agent_in_two_stage(agent):
 
     env = TwoStageGridWorldEnv()
-    num_episodes = 500
+    num_episodes = 200
     total_reward = 0.0
     debug = False
     action_counts = np.zeros(8)
@@ -160,13 +160,15 @@ def evaluate_agent_in_two_stage(agent):
                 if debug:
                     # print(action)
                     print(probs)
-                # if timestep == 0:
-                #     action = torch.tensor(5)
-                # elif (env.agent_pos == env.letter_goals[5][0]).all() and not past_checkpoint:
-                #     if debug:
-                #         print("Goal reached")
-                #     action = torch.tensor(6)
-                #     past_checkpoint = True
+                if timestep == 0:
+                    action = torch.tensor(5)
+                elif (
+                    env.agent_pos == env.letter_goals[5][0]
+                ).all() and not past_checkpoint:
+                    if debug:
+                        print("Goal reached")
+                    action = torch.tensor(6)
+                    past_checkpoint = True
                 # elif action >= 5:
                 #     p = probs[1:5]
                 #     action = np.argmax(p) + 1
@@ -179,6 +181,10 @@ def evaluate_agent_in_two_stage(agent):
             action_seq.append(action)
             obs = next_obs
             state_seq.append(torch.tensor(obs["position"]))
+        # print('Episode:')
+        # print('states', state_seq)
+        # print('actions', action_seq)
+        # print('return', reward)
 
     print(total_reward / num_episodes)
     print(action_counts)
@@ -188,6 +194,7 @@ if __name__ == "__main__":
 
     # env, agent = train_sl()
     agent = torch.load("pretrained_10x10.pth", weights_only=False)
-    evaluate_agent(agent)
+    # agent = torch.load('rl-trained.pth', weights_only=False)
+    # evaluate_agent(agent)
     evaluate_agent_in_two_stage(agent)
-    torch.save(agent, 'pretrained_10x10.pth')
+    torch.save(agent, "pretrained_10x10.pth")
