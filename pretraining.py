@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 from matplotlib import pyplot as plt
 
 from data_utils import (
-    RolloutBuffer,
+    # RolloutBuffer,
     sample_mini_batches,
     NextTokenDataset,
     collate_fn,
@@ -25,7 +25,7 @@ from policies import TransformerPolicy
 
 
 def train_sl():
-    env = PlayGridWorldEnv()
+    env = PlayGridWorldEnv(wrong_goals=True)
     device = torch.device("cpu")
     policy = TransformerPolicy().to(device)
     optimizer = optim.Adam(policy.parameters(), lr=1e-4)
@@ -139,7 +139,8 @@ def evaluate_agent_in_two_stage(agent):
 
 if __name__ == "__main__":
 
-    env, agent = train_sl()
-    # agent = torch.load("pretrained_5x5.pth", weights_only=False)
+    # env, agent = train_sl()
+    agent = torch.load("inexact-results/pretrained-model.pth", weights_only=False)
+    # agent = torch.load("5x5-results/pretrained_5x5.pth", weights_only=False)
     evaluate_agent_in_two_stage(agent)
-    torch.save(agent, "pretrained_5x5.pth")
+    # torch.save(agent, "inexact-results/pretrained-model.pth")

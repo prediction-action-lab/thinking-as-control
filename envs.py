@@ -88,15 +88,21 @@ class GridWorldEnv(gym.Env):
 
 
 class TwoStageGridWorldEnv(GridWorldEnv):
-    def __init__(self):
+    def __init__(self, inexact=False):
         super(TwoStageGridWorldEnv, self).__init__()
         self.grid_size = GRID_SIZE
         self.max_steps = MAX_STEPS
         self.deterministic_start = True
-        self.letter_goals = {
-            5: [(self.grid_size, self.grid_size)],  # 'A'
-            6: [(1, 1)],  # 'B'
-        }
+        if inexact:
+            self.letter_goals = {
+                5: [(self.grid_size, self.grid_size - 1)],  # 'A'
+                6: [(2, 1)],  # 'B'
+            }
+        else:
+            self.letter_goals = {
+                5: [(self.grid_size, self.grid_size)],  # 'A'
+                6: [(1, 1)],  # 'B'
+            }
         # Goal for "C" (7) is to do "A" and then "B"
         self.letter_goals[7] = [self.letter_goals[5][0], self.letter_goals[6][0]]
         self.letters = list(self.letter_goals.keys())

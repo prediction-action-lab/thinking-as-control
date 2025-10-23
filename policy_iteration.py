@@ -17,6 +17,8 @@ class GridworldMDP:
         thought_policy = np.full(
             (self.grid_size[0] - 1, self.grid_size[1]), "R", dtype=str
         )
+        if self.grid_size[0] > 2:
+            thought_policy[1][grid_size[1] // 2] = "L"
         no_thought_policy = np.full((1, self.grid_size[1]), "L", dtype=str)
         self.policy = np.vstack([thought_policy, no_thought_policy])
 
@@ -180,7 +182,7 @@ class GridworldMDP:
 
 
 if __name__ == "__main__":
-    n_rows, n_cols = 2, 10
+    n_rows, n_cols = 3, 10
     grid_size = (n_rows, n_cols)
     terminal_states, rewards = {}, {}
     for row in range(n_rows):
@@ -193,11 +195,12 @@ if __name__ == "__main__":
 
     value_data = {}
     policy_data = {}
+    mdp.display_policy()
 
     for itr in range(10):
         print("Iteration %d" % itr)
         mdp.step_policy_iteration()
-        print("Optimal Policy:")
+        print("Policy:")
         policy = mdp.display_policy()
         print("State Values:")
         values = mdp.display_values()
