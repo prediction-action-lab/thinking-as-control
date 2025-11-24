@@ -30,4 +30,29 @@ To run the "No-Think" baseline, use the option `--mask_thinking`. To run the "Sc
 
 ### Plotting Results
 
-Coming soon...
+Assuming that you have results from `gridworld-rl.py` saved in a directory, you can plot the results to produce plots like the ones in the paper with the following command:
+```
+python plot.py </path/to/results/directory>
+```
+By default, this script plots the success rate curves.
+The option `--plot_actions` will plot the frequency of thought actions throughout training.
+
+## Policy Iteration Example
+
+To produce the policy iteration results from Section 4 of the paper, run:
+```
+python policy_iteration.py
+```
+That's it!
+
+## Citation Information
+
+If this code is useful to you in your own work, please consider citing:
+```
+@inproceedings{hanna2025when,
+  title={When Can Model-Free Reinforcement Learning be Enough for Thinking?},
+  author={Josiah P. Hanna and Nicholas E. Corrado},
+  booktitle={Proceedings of Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2025}
+}
+```
