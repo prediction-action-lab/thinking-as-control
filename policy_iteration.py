@@ -182,7 +182,7 @@ class GridworldMDP:
 
 
 if __name__ == "__main__":
-    n_rows, n_cols = 3, 10
+    n_rows, n_cols = 2, 10
     grid_size = (n_rows, n_cols)
     terminal_states, rewards = {}, {}
     for row in range(n_rows):

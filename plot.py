@@ -16,7 +16,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--results_directory",
+        "results_directory",
         type=str,
         default=None,
         help="Path to the pretrained PyTorch model file (.pt or .pth)",
