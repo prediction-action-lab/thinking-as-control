@@ -60,9 +60,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def train_rl(
-    output_file_base, seed, model_path, use_action_mask=False, save_path=None
-):
+def train_rl(output_file_base, seed, model_path, use_action_mask=False, save_path=None):
     env = TwoStageGridWorldEnv()
     device = torch.device("cpu")
 

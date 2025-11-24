@@ -1,4 +1,8 @@
 """Code to plot RL training in thinking experiments."""
+import sys
+import argparse
+import os
+import re
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -6,40 +10,68 @@ import seaborn as sns
 import pandas as pd
 
 
-inexact_subgoals = False
-plot_actions = False
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run a pretrained PyTorch model with specified options."
+    )
 
-if inexact_subgoals:
-    bases = ["pretrained_", "pretrained_mask_", "scratch_mask_", "scratch_"]
-else:
-    bases = ["pretrained_2_", "pretrained_mask_2_", "scratch_", "scratch_nomask_"]
-names = ["Pretrained-Think", "Pretrained-NoThink", "Scratch-NoThink", "Scratch-Think"][:len(bases)]
+    parser.add_argument(
+        "--results_directory",
+        type=str,
+        default=None,
+        help="Path to the pretrained PyTorch model file (.pt or .pth)",
+    )
 
-results = {}
-# plt.figure(figsize=(10, 6))
+    parser.add_argument(
+        "--plot_actions",
+        action="store_true",
+        default=False,
+        help='If set, mask out "thinking" actions during evaluation',
+    )
+
+    return parser.parse_args()
+
+
+args = parse_args()
+
+results_directory = args.results_directory
+plot_actions = args.plot_actions
+
+
+# Optional: set a set of labels to use for plot
+# base_to_label = {
+#     'pretrained': 'Pretrained-Think',
+#     'pretrained_mask': 'Pretrained-NoThink',
+#     'scratch': 'Scratch-Think',
+#     'scratch_mask': 'Scratch-NoThink'
+# }
+base_to_label = {}
+
+# names = ["Pretrained-Think", "Pretrained-NoThink", "Scratch-NoThink", "Scratch-Think"][:len(bases)]
+
 data_list = []
 
-for base, name in zip(bases, names):
+for filename in os.listdir(results_directory):
 
-    results[base] = []
+    if ".npy" not in filename:
+        continue
 
-    for d in range(10):
+    if plot_actions and "-thinkactions.npy" not in filename:
+        continue
 
-        try:
-            if plot_actions:
-                if inexact_subgoals:
-                    x = np.load(f"inexact-results/{base}{d}-thinkactions.npy")
-                else:
-                    x = np.load(f"cr-5x5-results/{base}{d}-thinkactions.npy")
-            else:
-                if inexact_subgoals:
-                    x = np.load(f"inexact-results/{base}{d}.npy")
-                else:
-                    x = np.load(f"cr-5x5-results/{base}{d}.npy")
-        except FileNotFoundError:
-            continue
-        for t, val in enumerate(x):
-            data_list.append({"timepoint": t, "value": val, "series": name, "trial": d, 'run': d})
+    if not plot_actions and "-thinkactions.npy" in filename:
+        continue
+
+    base = "_".join(filename.split("_")[:-1])
+    seed = re.findall(r"-?\d+", filename)[-1]
+
+    if base in base_to_label:
+        base = base_to_label[base]
+
+    x = np.load(os.path.join(results_directory, filename))
+
+    for t, val in enumerate(x):
+        data_list.append({"timepoint": t, "value": val, "series": base, "run": seed})
 
 # Create DataFrame
 df_all = pd.DataFrame(data_list)
@@ -47,10 +79,24 @@ df_all = pd.DataFrame(data_list)
 # Plot with seaborn
 plt.figure(figsize=(10, 8))
 sns.lineplot(
-    data=df_all, x="timepoint", y="value", hue="series", estimator='mean', lw=3, errorbar="ci", n_boot=1000, #fill_kwargs={"alpha": 0.3}
+    data=df_all,
+    x="timepoint",
+    y="value",
+    hue="series",
+    estimator="mean",
+    lw=3,
+    errorbar="ci",
+    n_boot=1000,  # fill_kwargs={"alpha": 0.3}
 )
 sns.lineplot(
-    data=df_all, x="timepoint", y="value", hue="series", units='run', lw=1, estimator=None, alpha=0.3,
+    data=df_all,
+    x="timepoint",
+    y="value",
+    hue="series",
+    units="run",
+    lw=1,
+    estimator=None,
+    alpha=0.3,
 )
 
 handles, labels = plt.gca().get_legend_handles_labels()
@@ -59,17 +105,12 @@ labels = labels[:4]
 
 # Make tick labels larger
 plt.tick_params(axis="both", labelsize=25)
-# plt.legend(fontsize=22, loc=(0.5, 0.125))
 plt.legend(handles, labels, fontsize=20, ncols=2, loc=(0.02, 0.01))
-# plt.legend(fontsize=20, ncols=2, loc=3)
-# plt.title("Mean Across Trials with Bootstrap CI")
+
 plt.xlabel("Iteration", fontsize=35)
 if plot_actions:
     plt.ylabel("Fraction Time Thinking", fontsize=25)
     plt.ylim([-0.05, 0.6])
-    # if inexact_subgoals:
-    #     plt.legend(handles, labels, fontsize=20, loc=(0.1, 0.125))
-    # else:
     plt.legend(handles, labels, fontsize=20, ncols=2, loc=1)
 else:
     plt.ylabel("Success Rate", fontsize=35)

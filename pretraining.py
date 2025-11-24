@@ -1,4 +1,5 @@
 """Code to produce thinking-primed pre-trained model."""
+import argparse
 import numpy as np
 import gym
 import torch
@@ -22,6 +23,42 @@ from data_utils import (
 )
 from envs import PlayGridWorldEnv, GridWorldEnv, TwoStageGridWorldEnv
 from policies import TransformerPolicy
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Pre-train a transformer model in the "PlayingGridworldEnv."'
+    )
+
+    parser.add_argument(
+        "--model_load_path",
+        type=str,
+        default=None,
+        help="Path to a pretrained PyTorch model file to load (.pt or .pth)",
+    )
+
+    parser.add_argument(
+        "--model_save_path",
+        type=str,
+        default=None,
+        help="Path to save the trained model file (.pt or .pth)",
+    )
+
+    parser.add_argument(
+        "--mask_thinking",
+        action="store_true",
+        default=False,
+        help='If set, mask out "thinking" actions during evaluation',
+    )
+
+    parser.add_argument(
+        "--prompt_thinking",
+        action="store_true",
+        default=False,
+        help='If set, force agent to "think" at the right time in evaluation.',
+    )
+
+    return parser.parse_args()
 
 
 def train_sl():
@@ -79,14 +116,14 @@ def train_sl():
     return env, policy
 
 
-def evaluate_agent_in_two_stage(agent):
+def evaluate_pretrained_agent(
+    agent, prompt_thinking=False, mask_thinking_actions=False
+):
 
     env = TwoStageGridWorldEnv()
     num_episodes = 200
     total_reward = 0.0
     action_counts = np.zeros(8)
-    mask_thinking_actions = False
-    prompt_thinking = False
 
     for episode in range(num_episodes):
         obs = env.reset()
@@ -133,14 +170,20 @@ def evaluate_agent_in_two_stage(agent):
             obs = next_obs
             state_seq.append(torch.tensor(obs["position"]))
 
-    print(total_reward / num_episodes)
+    print("Success rate:", total_reward / num_episodes)
     print(action_counts)
 
 
 if __name__ == "__main__":
 
-    # env, agent = train_sl()
-    agent = torch.load("inexact-results/pretrained-model.pth", weights_only=False)
-    # agent = torch.load("5x5-results/pretrained_5x5.pth", weights_only=False)
-    evaluate_agent_in_two_stage(agent)
-    # torch.save(agent, "inexact-results/pretrained-model.pth")
+    args = parse_args()
+
+    if args.model_load_path is None:
+        env, agent = train_sl()
+    else:
+        agent = torch.load(args.model_load_path)
+
+    evaluate_pretrained_agent(agent, args.prompt_thinking, args.mask_thinking)
+
+    if args.model_save_path is not None:
+        torch.save(agent, args.model_save_path)
